@@ -1,0 +1,45 @@
+
+name: Build Ustadh APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract Android project
+        run: |
+          unzip -l ustadh_android_project.zip | head -40
+          unzip -q ustadh_android_project.zip -d extracted
+
+      - name: Locate Gradle project
+        run: |
+          find extracted -name gradlew -type f
+          find extracted -name build.gradle -o -name build.gradle.kts
+
+      - name: Build debug APK
+        run: |
+          cd extracted/ustadh_android_project
+          gradle assembleDebug
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ustadh-debug-apk
+          path: extracted/ustadh_android_project/app/build/outputs/apk/debug/app-debug.apk
